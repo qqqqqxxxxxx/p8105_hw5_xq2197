@@ -89,7 +89,7 @@ results_df %>%
 
 ## Problem 2
 
-Import the dataset.
+Import and tidy the dataset.
 
 ```{r}
 lda_df = 
@@ -154,12 +154,12 @@ sim_results = function(x) {
 sim_results(0)
 ```
 
-Map to all the values of mu.
+Map to all the values of mu and create a table.
 
 ```{r}
 list_df = 
   tibble(mu = 0:6,
-         t_test = map(.x = list_df$mu, ~sim_results(.x))
+         t_test = map(.x = mu, ~sim_results(.x))
   )
 ```
 
@@ -183,7 +183,7 @@ summarize_fx = function(x){
 list_df =
   list_df %>%
   mutate(
-    summarize_list = map(.x = list_df$t_test, ~summarize_fx(.x))
+    summarize_list = map(.x = t_test, ~summarize_fx(.x))
   ) %>%
   unnest(summarize_list)
 ```
@@ -199,7 +199,7 @@ list_df %>%
   title = "Mu and power plot",
   x = "True value of mu",
   y = "Power of test",
-  caption = "Data from the summarize_df dataset"
+  caption = "Data from the list_df dataset"
   )
 ```
 
@@ -210,7 +210,13 @@ Generate the second plot.
 ```{r}
 list_df %>%
   ggplot(aes(x = mu, y = avg_est)) +
-  geom_point()
+  geom_point() +
+  labs(
+  title = "True mu and average estimate plot",
+  x = "True value of mu",
+  y = "Average estimate",
+  caption = "Data from the list_df dataset"
+  )
 ```
 
 Generate the third plot.
@@ -234,5 +240,13 @@ list_df %>%
   ) %>%
   unnest(avg_list) %>%
   ggplot(aes(x = mu, y = avg_est_fil)) +
-  geom_point()
+  geom_point() +
+  labs(
+  title = "True mu and average estimate plot (after filtration)",
+  x = "True value of mu",
+  y = "Average estimate when null is rejected",
+  caption = "Data from the list_df dataset"
+  )
 ```
+
+Description: The sample average of μ (avg_est_fil) across tests for which the null is rejected are not equal to the true value of μ, especially when true mu = 0, 1, 2, and 3 in my simulations. When the true mu is close to the null value 0, there are few datasets whose null hypotheses were rejected. As a result, the sample size was small and thus the difference between sample average estimate and true mu was large.
