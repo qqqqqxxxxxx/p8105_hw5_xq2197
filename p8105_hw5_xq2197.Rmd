@@ -7,6 +7,7 @@ output: github_document
 ```{r setup, include=FALSE}
 library(tidyverse)
 library(ggplot2)
+library(rvest)
 
 knitr::opts_chunk$set(
   fig.width = 6,
@@ -129,3 +130,109 @@ lda_df %>%
 As observed in the plot, the observation values of subjects in the experimental group were higher than those of subjects in the control group. Additionally, the observation values of the experimental group continued increasing in the 8-week period, while the data of the control group were relatively stable during the 8-week period.
 
 ## Problem 3
+
+Write the function that generate the normalization dataset and conduct the t-test.
+
+```{r}
+sim_mean_sd = function(n = 30, mu, sigma = 5) {
+  sim_data = tibble(
+    x = rnorm(n, mean = mu, sd = sigma)
+  ) %>%
+  t.test(alternative = "two.sided", mu = 0) %>%
+  broom::tidy() %>%
+  select(estimate, p.value)  
+}
+```
+
+Write the simulation function.
+
+```{r}
+sim_results = function(x) { 
+  rerun(5000, sim_mean_sd(mu = x)) %>% 
+  bind_rows()
+}
+sim_results(0)
+```
+
+Map to all the values of mu.
+
+```{r}
+list_df = 
+  tibble(mu = 0:6,
+         t_test = map(.x = list_df$mu, ~sim_results(.x))
+  )
+```
+
+Calculate the proportions and average estimate of each mu.
+
+```{r}
+summarize_fx = function(x){
+  x %>%
+    mutate(
+      H0 = case_when(
+        p.value < 0.05 ~ "rejected",
+        p.value > 0.05 ~ "not rejected"
+        )
+    ) %>%
+    summarize(
+      null_reject = sum(H0 == "rejected"),
+      prop = null_reject/5000,
+      avg_est = mean(estimate)
+  )
+}
+list_df =
+  list_df %>%
+  mutate(
+    summarize_list = map(.x = list_df$t_test, ~summarize_fx(.x))
+  ) %>%
+  unnest(summarize_list)
+```
+
+Generate the first plot.
+
+```{r}
+list_df %>%
+  ggplot(aes(x = mu, y = prop)) +
+  geom_point() +
+  geom_smooth(se = FALSE) +
+  labs(
+  title = "Mu and power plot",
+  x = "True value of mu",
+  y = "Power of test",
+  caption = "Data from the summarize_df dataset"
+  )
+```
+
+Description: When the effect size increase, the power of test increase, first fast and then slowly.
+
+Generate the second plot.
+
+```{r}
+list_df %>%
+  ggplot(aes(x = mu, y = avg_est)) +
+  geom_point()
+```
+
+Generate the third plot.
+
+```{r}
+filter_fx = function(x){
+   x %>%
+    mutate(
+      H0 = case_when(
+        p.value < 0.05 ~ "rejected",
+        p.value > 0.05 ~ "not rejected"
+        )
+    ) %>%
+    filter(H0 == "rejected") %>%
+    summarize(avg_est_fil = mean(estimate))
+}
+
+list_df %>%
+  mutate(
+    avg_list = map(.x = list_df$t_test, ~filter_fx(.x))
+  ) %>%
+  unnest(avg_list) %>%
+  ggplot(aes(x = mu, y = avg_est_fil)) +
+  geom_point()
+```
