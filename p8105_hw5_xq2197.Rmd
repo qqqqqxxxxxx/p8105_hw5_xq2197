@@ -30,7 +30,7 @@ Read in the data.
 
 ```{r}
 homicide_df =
-  read_csv("data/homicide-data.csv") %>%
+  read_csv("homicide_data/homicide-data.csv") %>%
   mutate(
     city_state = str_c(city, state, sep = "_"),
     resolved = case_when(
@@ -83,4 +83,29 @@ results_df %>%
   geom_point() +
   geom_errorbar(aes(ymin = conf.low, ymax = conf.high)) +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+```
+
+## Problem 2
+
+Import the dataset.
+
+```{r}
+lda_df = 
+  tibble(
+    path = list.files("lda_data")
+  ) %>%
+  mutate(
+    data = map(.x = str_c("lda_data/", path), ~read_csv(.x))
+  ) %>%
+  unnest(data) %>%
+  mutate(
+    group = substr(path, 0, 3),
+    sub_id = substr(path, 5, 6)) %>%
+  select(group, sub_id, week_1:week_8) %>%
+  pivot_longer(
+    week_1:week_8,
+    names_to = "week",
+    values_to = "observation"
+  ) %>%
+  mutate(week = substr(week, 6, 7))
 ```
