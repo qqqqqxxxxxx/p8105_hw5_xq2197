@@ -6,6 +6,7 @@ output: github_document
 
 ```{r setup, include=FALSE}
 library(tidyverse)
+library(ggplot2)
 
 knitr::opts_chunk$set(
   fig.width = 6,
@@ -99,9 +100,10 @@ lda_df =
   ) %>%
   unnest(data) %>%
   mutate(
+    path = substr(path, 0, 6),
     group = substr(path, 0, 3),
     sub_id = substr(path, 5, 6)) %>%
-  select(group, sub_id, week_1:week_8) %>%
+  select(path, group, sub_id, week_1:week_8) %>%
   pivot_longer(
     week_1:week_8,
     names_to = "week",
@@ -109,3 +111,21 @@ lda_df =
   ) %>%
   mutate(week = substr(week, 6, 7))
 ```
+
+Create a spaghetti plot for each subject.
+
+```{r}
+lda_df %>%
+  ggplot(aes(x = week, y = observation, group = path)) +
+  geom_line(aes(color = group)) + 
+  labs(
+  title = "Longitudinal plot",
+  x = "Week",
+  y = "Observation",
+  caption = "Data from the lda dataset"
+  )
+```
+
+As observed in the plot, the observation values of subjects in the experimental group were higher than those of subjects in the control group. Additionally, the observation values of the experimental group continued increasing in the 8-week period, while the data of the control group were relatively stable during the 8-week period.
+
+## Problem 3
